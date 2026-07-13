@@ -17,7 +17,7 @@ contract Deploy is Script {
 
         ProfitTakerBrain brain = new ProfitTakerBrain();
         ProfitTakerBooks books = new ProfitTakerBooks();
-        StubHands hands = new StubHands(address(books));
+        StubHands hands = new StubHands(address(books), address(brain));
 
         books.setHands(address(hands));
 

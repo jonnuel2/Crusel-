@@ -13,47 +13,79 @@ interface IBooks {
     ) external returns (uint256);
 }
 
-/// @notice Placeholder executor. Simulates a fill with slippage,
-///         then posts the realized sale to BOOKS.
-///         Swap this for a real DEX router later — BOOKS never changes.
+interface IBrain {
+    function positions(address token) external view returns (
+        address feed,
+        uint256 basisPerUnit,
+        uint256 originalUnits,
+        uint256 remainingUnits,
+        uint256 peakPrice,
+        uint256 trailBps,
+        uint256 rungsFired,
+        bool    active
+    );
+}
+
+/// @notice Executor. Reads cost basis from BRAIN — never accepts it
+///         from the caller. Simulates a fill, posts to BOOKS.
 contract StubHands {
     address public owner;
     IBooks  public books;
+    IBrain  public brain;
 
-    uint256 public slippageBps = 50; // 0.5% worse than trigger price
+    uint256 public slippageBps = 50; // 0.5%
 
-    event Executed(uint256 indexed intentNonce, bytes32 receipt, uint256 priceOut);
+    mapping(uint256 => bool) public settled; // intentNonce => done
 
-    constructor(address _books) {
-        owner = msg.sender;
-        books = IBooks(_books);
+    event Executed(
+        uint256 indexed intentNonce,
+        address indexed token,
+        bytes32 receipt,
+        uint256 priceOut
+    );
+
+    modifier onlyOwner() {
+        require(msg.sender == owner, "not owner");
+        _;
     }
 
-    function setSlippage(uint256 bps) external {
-        require(msg.sender == owner, "not owner");
+    constructor(address _books, address _brain) {
+        owner = msg.sender;
+        books = IBooks(_books);
+        brain = IBrain(_brain);
+    }
+
+    function setSlippage(uint256 bps) external onlyOwner {
+        require(bps < 10000, "bad slippage");
         slippageBps = bps;
     }
 
-    /// @notice Called with the contents of BRAIN's IntentEmitted event.
+    /// @param intentNonce from BRAIN's IntentEmitted event
+    /// @param triggerPrice from the same event — the price BRAIN saw
     function execute(
         uint256 intentNonce,
         address token,
         uint256 unitsSold,
-        uint256 basisPerUnit,
         uint256 triggerPrice,
         string calldata reason
-    ) external returns (uint256 entryId) {
-        require(msg.sender == owner, "not owner");
+    ) external onlyOwner returns (uint256 entryId) {
+        require(!settled[intentNonce], "already settled");
+        require(unitsSold > 0, "no units");
+        settled[intentNonce] = true;
 
-        // simulate fill: you never get the trigger price exactly
+        // basis comes from BRAIN, not the caller
+        (, uint256 basisPerUnit, , , , , , ) = brain.positions(token);
+        require(basisPerUnit > 0, "no position");
+
+        // simulate fill — you never get the trigger price exactly
         uint256 priceOut = triggerPrice - ((triggerPrice * slippageBps) / 10000);
 
-        // in a real HANDS this is the swap tx hash; here we synthesize one
+        // real HANDS: this is the swap tx hash
         bytes32 receipt = keccak256(
             abi.encodePacked(intentNonce, token, block.timestamp)
         );
 
-        emit Executed(intentNonce, receipt, priceOut);
+        emit Executed(intentNonce, token, receipt, priceOut);
 
         entryId = books.post(
             intentNonce,
