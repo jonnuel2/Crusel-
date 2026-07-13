@@ -1,0 +1,164 @@
+@import "tailwindcss";
+
+@theme {
+  --color-paper: #ffffff;
+  --color-ink: #0a0a0a;
+  --color-plum: #2e1428;
+  --color-plum-lift: #4a2340;
+  --color-rule: #ddd9d6;
+  --color-graphite: #6b6660;
+  --color-wash: #fafaf9;
+
+  --font-display: "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
+  --font-body: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", monospace;
+}
+
+:root {
+  --grid: 64px;
+}
+
+html {
+  scroll-behavior: smooth;
+  -webkit-font-smoothing: antialiased;
+}
+
+body {
+  background: #ffffff;
+  color: #0a0a0a;
+  font-family: var(--font-body);
+  overflow-x: hidden;
+}
+
+.grid-field {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-image:
+    linear-gradient(to right, #e8e5e3 1px, transparent 1px),
+    linear-gradient(to bottom, #e8e5e3 1px, transparent 1px);
+  background-size: var(--grid) var(--grid);
+  opacity: 0.6;
+  -webkit-mask-image: radial-gradient(ellipse 100% 70% at 50% 25%, #000 25%, transparent 100%);
+  mask-image: radial-gradient(ellipse 100% 70% at 50% 25%, #000 25%, transparent 100%);
+}
+
+.grid-field::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(to right, #e8e5e3 1px, transparent 1px),
+    linear-gradient(to bottom, #e8e5e3 1px, transparent 1px);
+  background-size: calc(var(--grid) / 4) calc(var(--grid) / 4);
+  opacity: 0.35;
+}
+
+.display {
+  font-family: var(--font-display);
+  font-weight: 500;
+  letter-spacing: -0.035em;
+  line-height: 0.95;
+}
+
+.eyebrow {
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #8a8580;
+}
+
+.mono {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+@keyframes rise {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.rise { animation: rise 0.8s cubic-bezier(0.16, 1, 0.3, 1) both; }
+
+@keyframes sweep {
+  from { transform: translateY(0); }
+  to { transform: translateY(-50%); }
+}
+
+.tape-track { animation: sweep 30s linear infinite; }
+.tape:hover .tape-track { animation-play-state: paused; }
+
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.2; }
+}
+
+.live-dot { animation: pulse-dot 1.8s ease-in-out infinite; }
+
+.reveal {
+  opacity: 0;
+  transform: translateY(28px);
+  transition: opacity 0.9s cubic-bezier(0.16, 1, 0.3, 1), transform 0.9s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.reveal.seen { opacity: 1; transform: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  .reveal { opacity: 1; transform: none; }
+}
+
+/* ---------- legibility pass ---------- */
+
+body {
+  font-size: 17px;
+}
+
+/* body copy */
+.text-\[15px\]   { font-size: 17px !important; line-height: 1.7 !important; }
+.text-\[14px\]   { font-size: 16px !important; }
+.text-\[13px\]   { font-size: 15px !important; }
+.text-\[12\.5px\]{ font-size: 14.5px !important; line-height: 1.65 !important; }
+.text-\[13px\]   { font-size: 15px !important; }
+
+/* mono / data */
+.text-\[12px\]   { font-size: 13.5px !important; }
+.text-\[11\.5px\]{ font-size: 13px !important; }
+.text-\[11px\]   { font-size: 13px !important; }
+.text-\[10px\]   { font-size: 12px !important; }
+.text-\[9px\]    { font-size: 11px !important; letter-spacing: 0.12em !important; }
+
+/* eyebrows */
+.eyebrow {
+  font-size: 0.8125rem;
+  letter-spacing: 0.15em;
+}
+
+/* headlines */
+.text-\[42px\] { font-size: 46px !important; }
+.text-\[36px\] { font-size: 40px !important; }
+.text-\[34px\] { font-size: 38px !important; }
+.text-\[32px\] { font-size: 36px !important; }
+.text-\[30px\] { font-size: 34px !important; }
+.text-\[28px\] { font-size: 32px !important; }
+.text-\[22px\] { font-size: 25px !important; }
+.text-\[17px\] { font-size: 19px !important; }
+
+@media (min-width: 640px) {
+  .sm\:text-\[58px\] { font-size: 62px !important; }
+  .sm\:text-\[44px\] { font-size: 48px !important; }
+  .sm\:text-\[42px\] { font-size: 46px !important; }
+  .sm\:text-\[40px\] { font-size: 44px !important; }
+  .sm\:text-\[36px\] { font-size: 40px !important; }
+}
+
+@media (min-width: 1024px) {
+  .lg\:text-\[64px\] { font-size: 68px !important; }
+}
