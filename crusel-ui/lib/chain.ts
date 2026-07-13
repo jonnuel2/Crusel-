@@ -12,23 +12,22 @@ export const xlayer = defineChain({
 
 export const client = createPublicClient({ chain: xlayer, transport: http() });
 
-export const BRAIN = "0x66225aDfbA5B9Ad7e1Ce1e581c5198FA2130De82" as const;
-export const RECORD = "0x53459D8452ECf17956C3Cd4549B6d7cAc297f291" as const;
-export const HANDS = "0xa39dfD7fE237F18e44303304F4123d91669732Ef" as const;
+export const BRAIN = "0xcdb76F807f389878Ddae95F521A1fC2fd1a54aC1" as const;
+export const RECORD = "0x78EA5B902cB99A0CA9334143BE7591F4f1836719" as const;
+export const HANDS = "0x023144421BCD65c16eEf80aB50B9A0f0369e44Cf" as const;
 
 export const TOKENS = [
   {
     symbol: "BTC",
     address: "0x0000000000000000000000000000000000000b7c" as const,
-    feed: "0x3b4c12CB7ec57685a0cadC7AB327512C4a5206FE" as const,
+    feed: "0x32861a8B91D0F445ca6fC6A86239BaA5Ca9D0039" as const,
   },
   {
     symbol: "ETH",
     address: "0x0000000000000000000000000000000000000e74" as const,
-    feed: "0x2241f2c452FE6004330CFd4ffB0e9B11c6e75C38" as const,
+    feed: "0x78Fc3f0595b5Ca5A967001ddD38220589EF94f33" as const,
   },
 ];
-
 export const brainAbi = parseAbi([
   "function check(address) view returns (uint8,uint256,uint256,uint256)",
   "function positions(address) view returns (address,uint256,uint256,uint256,uint256,uint256,uint256,uint256,bool,bool)",

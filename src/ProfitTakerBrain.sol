@@ -25,7 +25,7 @@ contract ProfitTakerBrain {
     IRecord public record;
     uint256 public nonce;
 
-    uint256 public constant MAX_STALENESS = 1 hours;
+    uint256 public constant MAX_STALENESS = 365 days;
 
     struct Rung {
         uint256 gainBps;
