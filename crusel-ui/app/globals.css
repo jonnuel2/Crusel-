@@ -162,3 +162,53 @@ body {
 @media (min-width: 1024px) {
   .lg\:text-\[64px\] { font-size: 68px !important; }
 }
+
+/* ---------- mobile ---------- */
+
+@media (max-width: 640px) {
+  :root {
+    --grid: 40px;
+  }
+
+  /* headlines shouldn't overflow */
+  .display {
+    letter-spacing: -0.02em;
+    word-break: break-word;
+  }
+
+  /* tape: drop to essentials */
+  .tape .grid-cols-\[52px_46px_1fr_86px_92px\] {
+    grid-template-columns: 42px 38px 1fr 72px !important;
+    gap: 8px !important;
+    padding-left: 12px !important;
+    padding-right: 12px !important;
+  }
+  .tape .grid-cols-\[52px_46px_1fr_86px_92px\] > *:nth-child(5),
+  .tape .grid-cols-\[52px_46px_1fr_86px_92px\] > *:nth-child(6) {
+    display: none;
+  }
+
+  /* record table scrolls horizontally, give it a nudge */
+  table {
+    min-width: 720px !important;
+  }
+
+  /* ladder: tighter gutters */
+  .h-\[380px\] {
+    height: 320px !important;
+  }
+
+  /* code blocks shouldn't blow out the layout */
+  pre {
+    font-size: 10.5px !important;
+  }
+
+  /* section padding */
+  .py-24 {
+    padding-top: 3.5rem !important;
+    padding-bottom: 3.5rem !important;
+  }
+  .pt-20 {
+    padding-top: 2.5rem !important;
+  }
+}

@@ -36,7 +36,7 @@ export default function Ladder({
   const y = (bps: number) => 100 - (bps / ceiling) * 100;
 
   return (
-    <div className="relative h-[380px] w-full">
+    <div className="relative h-[380px] w-full min-w-[280px]">
       {/* spine */}
       <div className="absolute left-[86px] top-0 h-full w-px bg-rule" />
 
