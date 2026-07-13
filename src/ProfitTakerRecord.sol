@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-/// @notice Public record of every call this agent made, and whether anyone acted.
-///         No custody. No proceeds. No P&L. The agent does not hold funds and
+/// @notice Public record of every call Crusel made, and whether anyone acted.
+///         No custody. No proceeds. No P&L. Crusel does not hold funds and
 ///         cannot verify fills — so it does not pretend to.
 contract ProfitTakerRecord {
     address public owner;
@@ -11,16 +11,15 @@ contract ProfitTakerRecord {
     enum Status { OPEN, EXECUTED }
 
     struct Call {
-        // --- the call: BRAIN writes. Authoritative. ---
         uint256 intentNonce;
+        address user;
         address token;
         uint256 unitsIntended;
         uint256 triggerPrice;
         uint256 gainBps;
-        string  reason;        // RUNG | TRAIL | PANIC
+        string  reason;
         uint256 calledAt;
 
-        // --- acknowledgment: a caller reports they acted ---
         address executedBy;
         bytes32 txHash;
         uint256 executedAt;
@@ -28,7 +27,8 @@ contract ProfitTakerRecord {
     }
 
     Call[] public calls;
-    mapping(uint256 => uint256) public callOfNonce;  // intentNonce => index
+    mapping(uint256 => uint256) public callOfNonce;
+    mapping(address => uint256[]) public callsOfUser;
 
     uint256 public callCount;
     uint256 public executedCount;
@@ -36,7 +36,8 @@ contract ProfitTakerRecord {
     event CallMade(
         uint256 indexed callId,
         uint256 indexed intentNonce,
-        address indexed token,
+        address indexed user,
+        address token,
         uint256 unitsIntended,
         uint256 triggerPrice,
         uint256 gainBps,
@@ -61,9 +62,9 @@ contract ProfitTakerRecord {
         brain = _brain;
     }
 
-    /// @notice BRAIN logs its call. Written whether or not anyone acts on it.
     function logCall(
         uint256 intentNonce,
+        address user,
         address token,
         uint256 unitsIntended,
         uint256 triggerPrice,
@@ -74,6 +75,7 @@ contract ProfitTakerRecord {
 
         calls.push(Call({
             intentNonce:   intentNonce,
+            user:          user,
             token:         token,
             unitsIntended: unitsIntended,
             triggerPrice:  triggerPrice,
@@ -88,17 +90,17 @@ contract ProfitTakerRecord {
 
         callId = calls.length - 1;
         callOfNonce[intentNonce] = callId;
+        callsOfUser[user].push(callId);
         callCount++;
 
         emit CallMade(
-            callId, intentNonce, token,
+            callId, intentNonce, user, token,
             unitsIntended, triggerPrice, gainBps, reason
         );
     }
 
-    /// @notice A caller reports they acted on a call. Permissionless.
-    ///         Their address is recorded. Nothing here is verified —
-    ///         this is an acknowledgment, not a proof.
+    /// @notice Report that you acted on a call. Permissionless.
+    ///         Attributed, not verified — we record who claimed it.
     function acknowledge(uint256 intentNonce, bytes32 txHash)
         external returns (uint256 callId)
     {
@@ -124,16 +126,20 @@ contract ProfitTakerRecord {
         return calls.length;
     }
 
-    /// @notice How many of our calls were acted on. In bps. 10000 = all of them.
     function executionRateBps() external view returns (uint256) {
         if (callCount == 0) return 0;
         return (executedCount * 10000) / callCount;
+    }
+
+    function callCountOf(address user) external view returns (uint256) {
+        return callsOfUser[user].length;
     }
 
     function getCall(uint256 callId)
         external view
         returns (
             uint256 intentNonce,
+            address user,
             address token,
             uint256 unitsIntended,
             uint256 triggerPrice,
@@ -147,8 +153,8 @@ contract ProfitTakerRecord {
     {
         Call memory c = calls[callId];
         return (
-            c.intentNonce, c.token, c.unitsIntended, c.triggerPrice,
-            c.gainBps, c.reason, c.calledAt,
+            c.intentNonce, c.user, c.token, c.unitsIntended,
+            c.triggerPrice, c.gainBps, c.reason, c.calledAt,
             c.executedBy, c.txHash, c.status
         );
     }

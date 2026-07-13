@@ -6,6 +6,7 @@ import {
   BRAIN,
   RECORD,
   TOKENS,
+  DEMO_USER,
   brainAbi,
   recordAbi,
   type Call,
@@ -29,6 +30,7 @@ export type AgentState = {
   callCount: number;
   executedCount: number;
   rateBps: number;
+  userCount: number;
   loading: boolean;
   error: string | null;
 };
@@ -39,6 +41,7 @@ const EMPTY: AgentState = {
   callCount: 0,
   executedCount: 0,
   rateBps: 0,
+  userCount: 0,
   loading: true,
   error: null,
 };
@@ -48,40 +51,31 @@ export function useAgent(pollMs = 12000): AgentState {
 
   const load = useCallback(async () => {
     try {
-      // --- per-token state ---
-      const tokens: TokenState[] = await Promise.all(
-        TOKENS.map(async (t) => {
+      const settled = await Promise.allSettled(
+        TOKENS.map(async (t): Promise<TokenState> => {
           const [check, pos, ladLen] = await Promise.all([
             client.readContract({
               address: BRAIN,
               abi: brainAbi,
               functionName: "check",
-              args: [t.address],
+              args: [DEMO_USER, t.address],
             }) as Promise<readonly [number, bigint, bigint, bigint]>,
             client.readContract({
               address: BRAIN,
               abi: brainAbi,
               functionName: "positions",
-              args: [t.address],
+              args: [DEMO_USER, t.address],
             }) as Promise<
               readonly [
-                `0x${string}`,
-                bigint,
-                bigint,
-                bigint,
-                bigint,
-                bigint,
-                bigint,
-                bigint,
-                boolean,
-                boolean,
+                `0x${string}`, bigint, bigint, bigint, bigint,
+                bigint, bigint, bigint, boolean, boolean,
               ]
             >,
             client.readContract({
               address: BRAIN,
               abi: brainAbi,
               functionName: "ladderLength",
-              args: [t.address],
+              args: [DEMO_USER, t.address],
             }) as Promise<bigint>,
           ]);
 
@@ -92,7 +86,7 @@ export function useAgent(pollMs = 12000): AgentState {
                   address: BRAIN,
                   abi: brainAbi,
                   functionName: "getRung",
-                  args: [t.address, BigInt(i)],
+                  args: [DEMO_USER, t.address, BigInt(i)],
                 })
                 .then((r) => {
                   const [gainBps, sellBps] = r as readonly [bigint, bigint];
@@ -126,12 +120,19 @@ export function useAgent(pollMs = 12000): AgentState {
         }),
       );
 
-      // --- record ---
-      const [total, executed, rate] = (await Promise.all([
+      const tokens: TokenState[] = settled
+        .filter(
+          (r): r is PromiseFulfilledResult<TokenState> =>
+            r.status === "fulfilled",
+        )
+        .map((r) => r.value);
+
+      const [total, executed, rate, users] = (await Promise.all([
         client.readContract({ address: RECORD, abi: recordAbi, functionName: "callCount" }),
         client.readContract({ address: RECORD, abi: recordAbi, functionName: "executedCount" }),
         client.readContract({ address: RECORD, abi: recordAbi, functionName: "executionRateBps" }),
-      ])) as [bigint, bigint, bigint];
+        client.readContract({ address: BRAIN, abi: brainAbi, functionName: "userCount" }),
+      ])) as [bigint, bigint, bigint, bigint];
 
       const n = Number(total);
       const calls: Call[] = await Promise.all(
@@ -145,29 +146,22 @@ export function useAgent(pollMs = 12000): AgentState {
             })
             .then((r) => {
               const c = r as readonly [
-                bigint,
-                `0x${string}`,
-                bigint,
-                bigint,
-                bigint,
-                string,
-                bigint,
-                `0x${string}`,
-                `0x${string}`,
-                number,
+                bigint, `0x${string}`, `0x${string}`, bigint, bigint,
+                bigint, string, bigint, `0x${string}`, `0x${string}`, number,
               ];
               return {
                 id: i,
                 nonce: c[0],
-                token: c[1],
-                units: c[2],
-                triggerPrice: c[3],
-                gainBps: c[4],
-                reason: c[5],
-                calledAt: c[6],
-                executedBy: c[7],
-                txHash: c[8],
-                status: c[9],
+                user: c[1],
+                token: c[2],
+                units: c[3],
+                triggerPrice: c[4],
+                gainBps: c[5],
+                reason: c[6],
+                calledAt: c[7],
+                executedBy: c[8],
+                txHash: c[9],
+                status: c[10],
               } as Call;
             }),
         ),
@@ -179,6 +173,7 @@ export function useAgent(pollMs = 12000): AgentState {
         callCount: Number(total),
         executedCount: Number(executed),
         rateBps: Number(rate),
+        userCount: Number(users),
         loading: false,
         error: null,
       });

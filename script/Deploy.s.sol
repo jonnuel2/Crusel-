@@ -10,6 +10,8 @@ import {MockAggregator} from "../src/MockAggregator.sol";
 contract Deploy is Script {
     function run() external {
         uint256 pk = vm.envUint("PRIVATE_KEY");
+        address me = vm.addr(pk);
+
         vm.startBroadcast(pk);
 
         MockAggregator btcFeed = new MockAggregator("BTC / USD", 100_000e8);
@@ -24,19 +26,25 @@ contract Deploy is Script {
         address BTC = address(0xB7C);
         address ETH = address(0xE74);
 
+        // whitelist the feeds — users pick a token, not an oracle
+        brain.setFeed(BTC, address(btcFeed));
+        brain.setFeed(ETH, address(ethFeed));
+
+        // seed one demo position so the site isn't empty
         ProfitTakerBrain.Rung[] memory ladder = new ProfitTakerBrain.Rung[](3);
         ladder[0] = ProfitTakerBrain.Rung({gainBps: 2000,  sellBps: 2500});
         ladder[1] = ProfitTakerBrain.Rung({gainBps: 5000,  sellBps: 2500});
         ladder[2] = ProfitTakerBrain.Rung({gainBps: 10000, sellBps: 5000});
 
-        brain.setPosition(BTC, address(btcFeed), 100_000e8, 1e18,  10000, 3000, ladder);
-        brain.setPosition(ETH, address(ethFeed),   3_000e8, 10e18, 10000, 3000, ladder);
+        brain.openPosition(BTC, 100_000e8, 1e18,  10000, 3000, ladder);
+        brain.openPosition(ETH,   3_000e8, 10e18, 10000, 3000, ladder);
 
         console.log("BTC feed:", address(btcFeed));
         console.log("ETH feed:", address(ethFeed));
         console.log("Brain:   ", address(brain));
         console.log("Record:  ", address(record));
         console.log("Hands:   ", address(hands));
+        console.log("Demo user:", me);
 
         vm.stopBroadcast();
     }

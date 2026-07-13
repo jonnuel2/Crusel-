@@ -1,0 +1,23 @@
+{
+  "name": "crusel-mcp",
+  "version": "1.0.0",
+  "description": "Crusel — a profit-taking agent that calls exits and keeps score. MCP server.",
+  "type": "module",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "dev": "tsc && node dist/index.js"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.0",
+    "express": "^4.21.2",
+    "viem": "^2.21.0",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.6",
+    "@types/node": "^22.20.1",
+    "typescript": "^5.9.3"
+  }
+}

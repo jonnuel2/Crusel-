@@ -12,28 +12,33 @@ export const xlayer = defineChain({
 
 export const client = createPublicClient({ chain: xlayer, transport: http() });
 
-export const BRAIN = "0xcdb76F807f389878Ddae95F521A1fC2fd1a54aC1" as const;
-export const RECORD = "0x78EA5B902cB99A0CA9334143BE7591F4f1836719" as const;
-export const HANDS = "0x023144421BCD65c16eEf80aB50B9A0f0369e44Cf" as const;
+export const BRAIN = "0x1D8B77A44Edac389721dE0769f8f55A565cF0526" as const;
+export const RECORD = "0xF1766Fa22F203AE07CaFE643CA9e742ffBc9AC8b" as const;
+export const HANDS = "0x0CEd2aE9b08a9917641E13f74595a382B80bf045" as const;
 
 export const TOKENS = [
   {
     symbol: "BTC",
     address: "0x0000000000000000000000000000000000000b7c" as const,
-    feed: "0x32861a8B91D0F445ca6fC6A86239BaA5Ca9D0039" as const,
+    feed: "0xB822d19B623b8F0c37f401913c42842BD480Be81" as const,
   },
   {
     symbol: "ETH",
     address: "0x0000000000000000000000000000000000000e74" as const,
-    feed: "0x78Fc3f0595b5Ca5A967001ddD38220589EF94f33" as const,
+    feed: "0xcA02Cc2d402C4D75013932C3a492F27FafAc9579" as const,
   },
 ];
+
 export const brainAbi = parseAbi([
-  "function check(address) view returns (uint8,uint256,uint256,uint256)",
-  "function positions(address) view returns (address,uint256,uint256,uint256,uint256,uint256,uint256,uint256,bool,bool)",
-  "function ladderLength(address) view returns (uint256)",
-  "function getRung(address,uint256) view returns (uint256,uint256)",
+  "function check(address,address) view returns (uint8,uint256,uint256,uint256)",
+  "function positions(address,address) view returns (address,uint256,uint256,uint256,uint256,uint256,uint256,uint256,bool,bool)",
+  "function ladderLength(address,address) view returns (uint256)",
+  "function getRung(address,address,uint256) view returns (uint256,uint256)",
   "function nonce() view returns (uint256)",
+  "function userCount() view returns (uint256)",
+  "function users(uint256) view returns (address)",
+  "function tokenCountOf(address) view returns (uint256)",
+  "function userTokens(address,uint256) view returns (address)",
 ]);
 
 export const recordAbi = parseAbi([
@@ -41,7 +46,7 @@ export const recordAbi = parseAbi([
   "function executedCount() view returns (uint256)",
   "function executionRateBps() view returns (uint256)",
   "function totalCalls() view returns (uint256)",
-  "function getCall(uint256) view returns (uint256,address,uint256,uint256,uint256,string,uint256,address,bytes32,uint8)",
+  "function getCall(uint256) view returns (uint256,address,address,uint256,uint256,uint256,string,uint256,address,bytes32,uint8)",
 ]);
 
 // ---------- formatting ----------
@@ -78,6 +83,7 @@ export const day = (ts: bigint) => {
 export type Call = {
   id: number;
   nonce: bigint;
+  user: `0x${string}`;
   token: `0x${string}`;
   units: bigint;
   triggerPrice: bigint;
@@ -86,7 +92,7 @@ export type Call = {
   calledAt: bigint;
   executedBy: `0x${string}`;
   txHash: `0x${string}`;
-  status: number; // 0 OPEN, 1 EXECUTED
+  status: number;
 };
 
 export type Position = {
@@ -103,5 +109,7 @@ export type Position = {
 };
 
 export type Rung = { gainBps: bigint; sellBps: bigint };
+
+export const DEMO_USER = "0x4FABd3fd5D3B959b8c62567422B785dE3C926b15" as const;
 
 export const ZERO = "0x0000000000000000000000000000000000000000";

@@ -1,5 +1,6 @@
 "use client";
 
+import Simulator from "./components/Simulator";
 import Link from "next/link";
 import Nav from "./components/Nav";
 import Tape from "./components/Tape";
@@ -83,6 +84,33 @@ export default function Home() {
               That&apos;s the point.
             </p>
           </div>
+        </div>
+      </section>
+
+
+      {/* try it */}
+      <section className="border-t border-rule">
+        <div className="mx-auto max-w-[1180px] px-6 py-20">
+          <Reveal>
+            <div className="mb-10 flex flex-wrap items-end justify-between gap-6">
+              <div>
+                <p className="eyebrow mb-4">Try it — no wallet needed</p>
+                <h2 className="display max-w-[560px] text-[32px] sm:text-[40px]">
+                  Tell it what you bought.
+                  <br />
+                  See what it would call.
+                </h2>
+              </div>
+              <p className="max-w-[340px] text-[14px] leading-[1.65] text-graphite">
+                This runs against the live oracle on X Layer. Change the numbers
+                and watch the verdict move.
+              </p>
+            </div>
+          </Reveal>
+
+          <Reveal delay={80}>
+            <Simulator />
+          </Reveal>
         </div>
       </section>
 
@@ -468,3 +496,93 @@ export default function Home() {
     </>
   );
 }
+
+{/* how to use */}
+      <section className="border-t border-rule bg-wash/60">
+        <div className="mx-auto max-w-[1180px] px-6 py-24">
+          <Reveal>
+            <p className="eyebrow mb-4">Using it</p>
+            <h2 className="display max-w-[620px] text-[32px] sm:text-[40px]">
+              Your agent tells Crusel the plan. Crusel watches.
+            </h2>
+            <p className="mt-7 max-w-[540px] text-[15px] leading-[1.7] text-graphite">
+              Crusel is an MCP service. Connect it to any agent, describe your
+              position in plain language, and it registers your ladder onchain —
+              signed by you, owned by you.
+            </p>
+          </Reveal>
+
+          <div className="mt-14 grid gap-6 lg:grid-cols-3">
+            {[
+              {
+                n: "01",
+                h: "Describe the position",
+                b: "Your agent calls crusel_open_position with your entry, your size, and your ladder.",
+                code: `"I bought 2 BTC at $50,000.
+Sell 25% at +20%, 25% at +50%,
+50% at +100%. Don't start
+trailing until I'm up 100%,
+then exit on a 30% drop."`,
+              },
+              {
+                n: "02",
+                h: "You sign it",
+                b: "Crusel returns unsigned calldata. Your wallet broadcasts it, so the position registers to your address — not Crusel's.",
+                code: `to:    0x1D8B77A4…
+value: 0
+data:  0x1b87f597…
+
+→ your agent signs`,
+              },
+              {
+                n: "03",
+                h: "Crusel calls your exits",
+                b: "Poll crusel_check. When a rung or the trailing stop triggers, you get a signal. You execute it however you like.",
+                code: `→ RUNG. Ladder step reached.
+
+SELL 0.5 BTC at ~$60,000
+
+Crusel holds no funds and
+cannot trade for you.`,
+              },
+            ].map((s) => (
+              <Reveal key={s.n}>
+                <div className="h-full border border-rule bg-paper">
+                  <div className="border-b border-rule px-5 py-4">
+                    <span className="mono text-[11px] text-plum">{s.n}</span>
+                    <p className="mt-1.5 text-[16px] font-medium">{s.h}</p>
+                  </div>
+                  <div className="px-5 py-5">
+                    <p className="text-[14px] leading-[1.65] text-graphite">
+                      {s.b}
+                    </p>
+                    <pre className="mono mt-5 overflow-x-auto border-l-2 border-rule pl-4 text-[11px] leading-relaxed text-ink">
+{s.code}
+                    </pre>
+                  </div>
+                </div>
+              </Reveal>
+            ))}
+          </div>
+
+          <Reveal delay={100}>
+            <div className="mt-10 border-l-2 border-plum bg-paper py-5 pl-6">
+              <p className="max-w-[640px] text-[15px] leading-[1.7]">
+                Note what step 2 means:{" "}
+                <span className="font-medium">
+                  Crusel never holds a key and never holds your funds.
+                </span>{" "}
+                It reads an oracle, applies your ladder, and emits a signal.
+                Everything else is yours — your DEX, your router, your slippage,
+                your custody.
+              </p>
+              <p className="mono mt-3 text-[12px] text-graphite">
+                Which is also why it can&apos;t verify your fills. It records who{" "}
+                <span className="text-ink">claimed</span> to act, not proof that
+                they did. That&apos;s stated in the schema, not buried in a
+                disclaimer.
+              </p>
+            </div>
+          </Reveal>
+        </div>
+      </section>
