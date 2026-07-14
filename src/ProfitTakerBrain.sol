@@ -28,7 +28,10 @@ contract ProfitTakerBrain {
     IRecord public record;
     uint256 public nonce;
 
-    uint256 public constant MAX_STALENESS = 365 days;
+    /// @notice How old a feed answer may be before BRAIN rejects it. Set at
+    ///         construction: a few hours on mainnet (real feeds heartbeat ~1h),
+    ///         loose on the testnet demo where a mock feed sits untouched.
+    uint256 public immutable MAX_STALENESS;
 
     struct Rung {
         uint256 gainBps;   // +2000 = +20%
@@ -92,9 +95,11 @@ contract ProfitTakerBrain {
         _;
     }
 
-    constructor(address _record) {
+    constructor(address _record, uint256 _maxStaleness) {
+        require(_maxStaleness > 0, "no staleness window");
         owner = msg.sender;
         record = IRecord(_record);
+        MAX_STALENESS = _maxStaleness;
     }
 
     // ---------- feed registry (owner) ----------

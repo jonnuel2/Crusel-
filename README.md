@@ -7,7 +7,9 @@ a signed call — what to sell, how much, and why.
 **It does not hold your funds. It does not execute trades.** It makes calls, and
 it keeps a public record of every one — including the calls nobody took.
 
-Deployed on X Layer testnet (chain 1952).
+Deployed on X Layer testnet (chain 1952) for the driveable demo, and
+mainnet-ready (chain 196) against X Layer's real price feeds — WBTC, WETH, OKB,
+USDT, USDC, DAI. See `script/DeployMainnet.s.sol`.
 
 ---
 
@@ -157,13 +159,22 @@ custody. The agent has no opinion and no access.
 
 ## Honest scope
 
-**The oracle is mocked.** X Layer's documented Chainlink-compatible feed addresses
-did not resolve to deployed contracts on either testnet or mainnet at build time.
-`MockAggregator` implements the exact `AggregatorV3Interface` that BRAIN consumes
-— a real feed is a one-line config change and zero code change.
+**The oracle is mocked on testnet — real on mainnet.** X Layer's testnet
+Chainlink-compatible feed addresses do not resolve to deployed contracts, so the
+testnet build uses `MockAggregator`, which implements the exact
+`AggregatorV3Interface` that BRAIN consumes. On **X Layer mainnet the feeds are
+live** (verified on-chain), so migrating is literally what
+`script/DeployMainnet.s.sol` does: whitelist real feeds instead of mocks. Zero
+change to BRAIN.
 
-This is also the better demo. A live BTC feed cannot show you a ladder, because
-BTC will not move 20% during a two-minute video.
+Keeping the mock on testnet is also the better *demo*. A live BTC feed cannot
+show you a ladder fire, because BTC will not move 20% during a two-minute video —
+the mock lets the keeper drive price through the whole ladder on camera.
+
+Note: X Layer's real feeds are not all 8-decimal (WBTC/WETH/OKB report 2, USDC
+4). BRAIN's gain math is a pure ratio, so it is decimal-agnostic and stays
+correct; the MCP reads each feed's `decimals()` and scales human-facing prices to
+it.
 
 **Acknowledgments are unverified.** A caller reports a tx hash; the contract does
 not confirm the swap occurred. Proving an external transaction onchain is
@@ -183,8 +194,13 @@ would need lot queues. Declared, not hidden.
 
 ```bash
 forge build
-forge script script/Deploy.s.sol --rpc-url $XLAYER_RPC --broadcast
+
+# testnet demo — deploys mock feeds you can drive
+forge script script/Deploy.s.sol --rpc-url xlayer_testnet --broadcast
 node keeper.js
+
+# mainnet — wires the real X Layer feeds, no mocks
+forge script script/DeployMainnet.s.sol --rpc-url xlayer_mainnet --broadcast
 ```
 
 Then drive the price in a second terminal:

@@ -18,7 +18,8 @@ contract Deploy is Script {
         MockAggregator ethFeed = new MockAggregator("ETH / USD",   3_000e8);
 
         ProfitTakerRecord record = new ProfitTakerRecord();
-        ProfitTakerBrain brain = new ProfitTakerBrain(address(record));
+        // loose window — the mock feed only updates when the keeper pokes it
+        ProfitTakerBrain brain = new ProfitTakerBrain(address(record), 365 days);
         StubHands hands = new StubHands(address(record));
 
         record.setBrain(address(brain));
