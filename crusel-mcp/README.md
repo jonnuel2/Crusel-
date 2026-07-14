@@ -38,9 +38,19 @@ Crusel does not custody funds and does not execute trades. It reads an oracle, a
 
 That means it also cannot verify your fills. `crusel_acknowledge` records **who claimed to act** — attributed, not proven. This is stated in the schema, not buried in a disclaimer.
 
-## Deployed
+## Networks
 
-X Layer testnet, chain 1952.
+Set `NETWORK` in the env (default `testnet`). It selects the RPC and the token
+set; `BRAIN`/`RECORD` are overridable per-network.
+
+**testnet** (chain 1952) — mock feeds you can drive for a demo. Watches `BTC`, `ETH`.
 
 - BRAIN `0x1D8B77A44Edac389721dE0769f8f55A565cF0526`
 - RECORD `0xF1766Fa22F203AE07CaFE643CA9e742ffBc9AC8b`
+
+**mainnet** (chain 196) — X Layer's real price feeds. Watches `WBTC`, `WETH`,
+`WOKB`, `USDT`, `USDC`, `DAI`. Deploy with `script/DeployMainnet.s.sol`, then set
+`NETWORK=mainnet`, `BRAIN`, and `RECORD`.
+
+Feed decimals differ per asset (WBTC/WETH/OKB report 2, USDC 4, mock 8). The
+server reads each feed's `decimals()` and scales accordingly — no assumption baked in.

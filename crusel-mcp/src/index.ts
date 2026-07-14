@@ -5,6 +5,7 @@ import { z } from "zod";
 import { encodeFunctionData } from "viem";
 import {
   client,
+  xlayer,
   BRAIN,
   RECORD,
   brainAbi,
@@ -17,7 +18,8 @@ import {
   pct,
   amt,
   resolveToken,
-  toPrice8,
+  feedDecimals,
+  toPriceScaled,
   toUnits18,
 } from "./chain.js";
 
@@ -60,8 +62,9 @@ function server() {
           args: [token],
         })) as bigint;
 
+        const dec = await feedDecimals(token);
         const sym = SYMBOL_OF[token.toLowerCase()] ?? token;
-        rows.push(`${sym.padEnd(5)} ${usd(px).padStart(14)}   ${token}`);
+        rows.push(`${sym.padEnd(5)} ${usd(px, dec).padStart(14)}   ${token}`);
       }
 
       return text(
@@ -83,6 +86,7 @@ function server() {
     async ({ user, token }) => {
       const t = resolveToken(token);
       const sym = SYMBOL_OF[t.toLowerCase()] ?? t;
+      const dec = await feedDecimals(t);
 
       const [reason, units, gainBps, price] = (await client.readContract({
         address: BRAIN as `0x${string}`,
@@ -111,11 +115,11 @@ function server() {
       }
 
       const head =
-        `${sym} — ${usd(price)}  (${Number(gainBps) >= 0 ? "+" : ""}${pct(gainBps)} from entry)\n` +
-        `entry ${usd(basis)}   holding ${amt(remaining)} of ${amt(orig)}\n` +
+        `${sym} — ${usd(price, dec)}  (${Number(gainBps) >= 0 ? "+" : ""}${pct(gainBps)} from entry)\n` +
+        `entry ${usd(basis, dec)}   holding ${amt(remaining)} of ${amt(orig)}\n` +
         `rungs fired: ${rungsFired}   trail: ${
           trailArmed
-            ? `ARMED — exits on ${pct(trailBps)} off peak (peak ${usd(peak)})`
+            ? `ARMED — exits on ${pct(trailBps)} off peak (peak ${usd(peak, dec)})`
             : `asleep until ${pct(trailArmBps)}`
         }\n`;
 
@@ -130,7 +134,7 @@ function server() {
 
       return text(
         `${head}\n→ ${REASON[reason]}. ${verb}\n\n` +
-          `SELL ${amt(units)} ${sym} at ~${usd(price)}\n\n` +
+          `SELL ${amt(units)} ${sym} at ~${usd(price, dec)}\n\n` +
           `This is a signal, not a transaction. Execute it yourself, on whatever venue you like — ` +
           `Crusel holds no funds and cannot trade for you.\n\n` +
           `To make it count toward Crusel's public record, poke it onchain (anyone can: fire(user, token) on ` +
@@ -208,13 +212,14 @@ function server() {
 
         const [nonce, forUser, token, units, trigger, gainBps, reason, calledAt, by, , status] = c;
 
+        const dec = await feedDecimals(token);
         const sym = SYMBOL_OF[token.toLowerCase()] ?? token.slice(0, 8);
         const when = new Date(Number(calledAt) * 1000).toISOString().slice(0, 16).replace("T", " ");
         const state = status === 0 ? "OPEN — nobody acted" : `taken by ${by.slice(0, 8)}…`;
 
         rows.push(
           `#${String(nonce).padStart(3, "0")}  ${sym.padEnd(4)} ${reason.padEnd(6)} +${pct(gainBps).padStart(7)}  ` +
-            `sell ${amt(units)} @ ${usd(trigger).padStart(12)}  ${when}  ${state}` +
+            `sell ${amt(units)} @ ${usd(trigger, dec).padStart(12)}  ${when}  ${state}` +
             (user ? "" : `\n      for ${forUser}`),
         );
       }
@@ -228,7 +233,7 @@ function server() {
       return text(
         `${rows.join("\n")}\n\n` +
           `${made} calls made · ${taken} acted on · ${pct(rate)} execution rate\n` +
-          `Verify: ${RECORD} on X Layer (chain 1952)`,
+          `Verify: ${RECORD} on ${xlayer.name} (chain ${xlayer.id})`,
       );
     },
   );
@@ -257,7 +262,7 @@ function server() {
           `left open       ${made - taken}\n` +
           `positions watched ${users}\n\n` +
           `Calls nobody took remain in the record permanently. Crusel does not hide them.\n` +
-          `Record: ${RECORD} · X Layer 1952`,
+          `Record: ${RECORD} · ${xlayer.name} ${xlayer.id}`,
       );
     },
   );
@@ -312,6 +317,7 @@ function server() {
     async ({ token, entry_price_usd, amount, ladder, trail_arms_at_pct, trail_giveback_pct }) => {
       const t = resolveToken(token);
       const sym = SYMBOL_OF[t.toLowerCase()] ?? t;
+      const dec = await feedDecimals(t);
 
       if (ladder.length === 0) throw new Error("Ladder needs at least one rung.");
 
@@ -336,7 +342,7 @@ function server() {
         functionName: "openPosition",
         args: [
           t,
-          toPrice8(entry_price_usd),
+          toPriceScaled(entry_price_usd, dec),
           toUnits18(amount),
           BigInt(Math.round(trail_arms_at_pct * 100)),
           BigInt(Math.round(trail_giveback_pct * 100)),
@@ -365,7 +371,7 @@ function server() {
           `  then exits everything on a ${trail_giveback_pct}% drop from peak\n\n` +
           `─────────────────────────────────────\n` +
           `Sign and broadcast this to register it. The position will belong to whichever address signs.\n\n` +
-          `chainId: 1952 (X Layer testnet)\n` +
+          `chainId: ${xlayer.id} (${xlayer.name})\n` +
           `to:      ${BRAIN}\n` +
           `value:   0\n` +
           `data:    ${data}\n\n` +
@@ -400,7 +406,7 @@ function server() {
       return text(
         `Acknowledging call #${call_number}.\n\n` +
           `Sign and broadcast:\n\n` +
-          `chainId: 1952 (X Layer testnet)\n` +
+          `chainId: ${xlayer.id} (${xlayer.name})\n` +
           `to:      ${RECORD}\n` +
           `value:   0\n` +
           `data:    ${data}\n\n` +
@@ -418,7 +424,7 @@ const app = express();
 app.use(express.json());
 
 app.get("/health", (_req, res) => {
-  res.json({ ok: true, service: "crusel", chain: 1952, brain: BRAIN, record: RECORD });
+  res.json({ ok: true, service: "crusel", chain: xlayer.id, brain: BRAIN, record: RECORD });
 });
 
 app.post("/mcp", async (req, res) => {

@@ -9,3 +9,4 @@ via_ir = true
 
 [rpc_endpoints]
 xlayer_testnet = "https://testrpc.xlayer.tech"
+xlayer_mainnet = "https://rpc.xlayer.tech"
